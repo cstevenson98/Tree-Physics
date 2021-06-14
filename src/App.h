@@ -4,26 +4,27 @@
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <string> 
+#include <iostream>
 
 using chr = std::chrono::steady_clock;
 
-class App
+namespace App
 {
-private:
-    GLFWwindow* m_window;
+    void init(GLFWwindow** window, int widthX, int widthY, std::string title);
 
-    unsigned int m_widthX;
-    unsigned int m_widthY;
+    class Timer 
+    {
+    public:
+        chr::time_point m_CurrentTime;
 
-    // Global timing information
-    chr::time_point m_CurrentTime = chr::now();
-    
-public:
-    App(unsigned int widthX, unsigned int widthY, char* title);
-    ~App();
+        Timer()
+        : m_CurrentTime( chr::now() )
+        { }
 
-    float dt();
+        ~Timer()
+        { }
 
-    bool error = false;
-    std::string errorMsg;
-};
+        float dt();
+    };
+
+} // namespace App

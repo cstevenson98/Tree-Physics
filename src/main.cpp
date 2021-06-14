@@ -17,70 +17,98 @@
 
 #include "Chain.h"
 #include "linear.h"
+#include "App.h"
 
 ////////////////////////////////////////////////////////////////////////////
-int widthX = 800;
-int widthY = 800;
+unsigned int widthX = 1000;
+unsigned int widthY = 1000;
+std::string title = "Verlet integration";
 ////////////////////////////////////////////////////////////////////////////
+
+double xPos = 0.;
+double yPos = 0.;
+double mouseX = 0.;
+double mouseY = 0.;
+
+bool clicked = false;
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_W)
+        yPos += 0.025;
+	if (key == GLFW_KEY_S)
+        yPos -= 0.025;
+	if (key == GLFW_KEY_D)
+        xPos += 0.025;
+	if (key == GLFW_KEY_A)
+        xPos -= 0.025;
+
+}
+
+void mouse_callback(GLFWwindow* window, double _xPos, double _yPos)
+{
+    mouseX = _xPos;
+	mouseY = _yPos;
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT)
+	{
+		xPos = -1 + 2*mouseX/widthX;
+		yPos = 1 - 2*mouseY/widthY;
+		clicked = true;
+	}
+}
 
 int main(void)
 {
+	// Initialise GLFW window
 	GLFWwindow* window;
-	if (!glfwInit()) { return -1; }
+	App::init(&window, widthX, widthY, title);
+	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback( window, mouse_callback );
+	glfwSetMouseButtonCallback( window, mouse_button_callback );
 
-	window = glfwCreateWindow(widthX, widthY, "WindowTitle", /*glfwGetPrimaryMonitor()*/NULL, NULL);
-	if (!window){ glfwTerminate(); return -1; }
-
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1);
-	glViewport(0, 0, widthX, widthY);
-
-	if (glewInit() != GLEW_OK)
-		std::cout << "Something went wrong in GLEW init" << std::endl;
-
-    {
-		int l = 250;
-		std::vector<vect2f> points;
-		for (int i = 0; i < l; i++)
-		{
-			float x = -1.0+1.0/l*(l-i);
-			float y = 1.;
-			points.push_back({x, y});
-		}
-		
-		Chain chain(points, 1.0/l, 5.0, 1.);
-
-		// // Timing stuff;
-		std::chrono::steady_clock::time_point current_time 
-			= std::chrono::steady_clock::now();
-		float dt = std::chrono::duration_cast<std::chrono::microseconds>
-						(std::chrono::steady_clock::now() - current_time).count();
-		float t = 0.;
-
-		float DT = 0.05; // Testing purposes. 
-
-       	while (!glfwWindowShouldClose(window))
-		{
-			dt = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-current_time).count();
-			current_time = std::chrono::steady_clock::now();
-
-			t += dt / 1000000.0; // t in seconds;
-			dt = dt / 1000000.0; // dt in seconds;
-
-			std::cout << 1/dt << " FPS.\n";
-
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-			chain.Update(dt);
-			chain.Draw();
-
-			GLCall( glfwSwapBuffers(window) );
-			GLCall( glfwPollEvents() );
-		}
+	// Initialise a chain physics object pinned at (0, 1):
+	int l = 1551;
+	std::vector<vect2f> points;
+	for (int i = 0; i < l; i++)
+	{
+		float x = -1.0 + 2.0/l * (l-i);
+		float y = 0.;
+		points.push_back({x, y});
 	}
+	Chain chain(points, 1./l, .4, 1.0);
 
+	// Main loop with timer to track frame times
+	App::Timer timer;
+	float t = 0;
+    while (!glfwWindowShouldClose(window))
+	{
+		// std::cout << "Hello" << std::endl;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+		float dt = timer.dt();
+		t += dt;
+
+		chain.Update(dt);
+
+		if(clicked)
+		{
+			chain.m_present[l/2].x = xPos;
+			chain.m_present[l/2].y = yPos;
+			clicked = false;
+		}
+		chain.m_present[l-1].x = -1.;
+		chain.m_present[l-1].y = 0.;
+		chain.Draw();
+
+		GLCall( glfwSwapBuffers(window) );
+		GLCall( glfwPollEvents() );
+	}
+	
 	return 0;
 }
-
 
 // Tree code need verlet integration first
 
