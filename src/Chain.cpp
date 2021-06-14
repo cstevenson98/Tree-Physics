@@ -36,7 +36,7 @@ void Chain::Update(float dt)
 
     m_past = store;
 
-    for(int j = 0; j < 600; j++)
+    for(int j = 0; j < 60; j++)
     {
     for(int i = 1; i < m_present.size(); i++)
     {
